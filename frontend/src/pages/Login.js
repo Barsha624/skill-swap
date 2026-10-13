@@ -1,52 +1,47 @@
 import { useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
-
-
-<div style={{ position: "relative", zIndex: 1 }}>
-  {/* your entire page content */}
-</div>
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { api, saveSession } from "../lib/api";
+import { useToast } from "../components/Toast";
 
 export default function Login() {
-  const [data, setData] = useState({
-    email: "",
-    password: ""
-  });
+  const [f, setF] = useState({ email: "", password: "" });
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const nav = useNavigate();
+  const loc = useLocation();
+  const toast = useToast();
 
-  const handleChange = (e) => {
-    setData({ ...data, [e.target.name]: e.target.value });
+  const done = (res) => {
+    saveSession(res);
+    toast("Welcome back");
+    nav(loc.state?.from || "/dashboard");
   };
 
-  
-
-  const navigate = useNavigate();
-  const handleLogin = async () => {
-  try {
-    const res = await axios.post(
-      "http://localhost:5000/api/login",
-      data
-    );
-
-    localStorage.setItem("token", res.data.token);
-
-    alert("Login Successful 🎉");
-
-    navigate("/dashboard");
-    
-    console.log("JWT Token:", res.data.token);
-
-  } catch (err) {
-    alert("Invalid Credentials ❌");
-  }
+  const submit = async (e) => {
+    e.preventDefault();
+    setErr(""); setBusy(true);
+    try { done(await api.login(f.email.trim(), f.password)); }
+    catch (x) { setErr(x.response?.data?.message || "Couldn't sign you in. Check your details."); }
+    finally { setBusy(false); }
   };
+
   return (
-    <div style={{ textAlign: "center", marginTop: "50px" }}>
-      <h2>Login</h2>
-
-      <input name="email" placeholder="Email" onChange={handleChange} /><br/><br/>
-      <input name="password" type="password" placeholder="Password" onChange={handleChange} /><br/><br/>
-
-      <button onClick={handleLogin}>Login</button>
+    <div className="auth">
+      <h1>Welcome back</h1>
+      <p className="sub">Log in to continue swapping skills.</p>
+      <form className="card" onSubmit={submit}>
+        {err && <div className="form-error" role="alert">{err}</div>}
+        <div className="field">
+          <label htmlFor="email">Email</label>
+          <input id="email" className="input" type="email" required autoComplete="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
+        </div>
+        <div className="field">
+          <label htmlFor="pw">Password</label>
+          <input id="pw" className="input" type="password" required autoComplete="current-password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
+        </div>
+        <button className="btn btn-primary btn-block" disabled={busy}>{busy ? "Signing in…" : "Log in"}</button>
+      </form>
+      <p className="muted" style={{ textAlign: "center", marginTop: 18 }}>New here? <Link to="/register">Create an account</Link></p>
     </div>
   );
 }

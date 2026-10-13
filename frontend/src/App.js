@@ -1,82 +1,44 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useState } from "react";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
+import Layout from "./components/Layout";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { ToastProvider } from "./components/Toast";
+import ErrorBoundary from "./components/ErrorBoundary";
 import Home from "./pages/Home";
+import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
 import Users from "./pages/Users";
 import Match from "./pages/Match";
-import Login from "./pages/Login";
-import Leaderboard from "./pages/Leaderboard";
-import ProtectedRoute from "./components/ProtectedRoute";
-import Chat from "./pages/Chat";
 import Booking from "./pages/Booking";
+import Chat from "./pages/Chat";
+import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
-import Runes from "./components/Runes";
-import SparkleCursor from "./components/SparkleCursor";
-import Dashboard from "./pages/Dashboard";
 
-function App() {
-  const [darkMode, setDarkMode] = useState(false);
+const guard = (el) => <ProtectedRoute>{el}</ProtectedRoute>;
 
+// HashRouter keeps deep links working on GitHub Pages (no server-side rewrites).
+export default function App() {
   return (
-    <div className={darkMode ? "dark" : "light"}>
-      <BrowserRouter>
-        <button className="magic-btn"
-      onClick={() => {
-        setDarkMode(!darkMode);
-        document.body.className = darkMode ? "light" : "dark";
-      }}
-      style={{
-        position: "fixed",
-        bottom: "20px",
-        right: "20px",
-        zIndex: 999
-      }}
-    >
-      Theme
-    </button>
-        <SparkleCursor />
-        <Runes />
-
+    <ErrorBoundary>
+    <ToastProvider>
+      <HashRouter>
         <Routes>
-          <Route path="/" element={<Home />} />
-<Route path="/register" element={<Register />} />
-<Route path="/login" element={<Login />} />
-<Route path="/chat" element={<Chat />} />
-<Route path="/booking" element={<Booking />} />
-<Route path="/profile" element={<Profile />} />
-<Route path="/dashboard" element={<Dashboard />} />
-
-<Route
-  path="/users"
-  element={
-    <ProtectedRoute>
-      <Users />
-    </ProtectedRoute>
-  }
-/>
-
-<Route
-  path="/match"
-  element={
-    <ProtectedRoute>
-      <Match />
-    </ProtectedRoute>
-  }
-/>
-
-<Route
-  path="/leaderboard"
-  element={
-    <ProtectedRoute>
-      <Leaderboard />
-    </ProtectedRoute>
-  }
-/>
-
+          <Route element={<Layout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/dashboard" element={guard(<Dashboard />)} />
+            <Route path="/users" element={guard(<Users />)} />
+            <Route path="/match" element={guard(<Match />)} />
+            <Route path="/booking" element={guard(<Booking />)} />
+            <Route path="/chat" element={guard(<Chat />)} />
+            <Route path="/leaderboard" element={guard(<Leaderboard />)} />
+            <Route path="/profile" element={guard(<Profile />)} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
         </Routes>
-      </BrowserRouter>
-    </div>
+      </HashRouter>
+    </ToastProvider>
+    </ErrorBoundary>
   );
 }
-
-export default App;

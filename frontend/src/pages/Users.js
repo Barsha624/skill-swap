@@ -1,224 +1,101 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Icon from "../components/Icon";
+import { Avatar, Empty, Modal, PageHead, Skeleton, Stars, Tags, ratingMap } from "../components/Ui";
+import { api, getUser } from "../lib/api";
+import { useToast } from "../components/Toast";
 
-<div style={{ position: "relative", zIndex: 1 }}>
-  {/* your entire page content */}
-</div>
+function ReviewModal({ mentor, reviews, me, onClose, onAdded }) {
+  const toast = useToast();
+  const list = reviews.filter((r) => r.mentor === mentor.name);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!rating) return toast("Pick a star rating first", "error");
+    try {
+      await api.addReview({ learner: me.name, mentor: mentor.name, rating, comment: comment.trim() });
+      toast("Review posted");
+      setRating(0); setComment("");
+      onAdded();
+    } catch (x) { toast(x.response?.data?.message || "Couldn't post your review", "error"); }
+  };
+  return (
+    <Modal title={`Reviews for ${mentor.name}`} onClose={onClose}>
+      {list.length === 0 ? <p className="muted" style={{ marginBottom: 16 }}>No reviews yet — be the first.</p> : list.map((r) => (
+        <div className="review" key={r._id}>
+          <div className="user-top"><Avatar name={r.learner} size={32} /><b>{r.learner}</b><span style={{ marginLeft: "auto" }}><Stars value={r.rating} /></span></div>
+          <p>{r.comment}</p>
+        </div>
+      ))}
+      {mentor.name !== me.name && (
+        <form onSubmit={submit} style={{ marginTop: 18, paddingTop: 18, borderTop: "1px solid var(--border)" }}>
+          <div className="field"><label>Your rating</label><Stars value={rating} onChange={setRating} size={26} /></div>
+          <div className="field"><label htmlFor="rc">Comment</label><textarea id="rc" className="textarea" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="What was the session like?" /></div>
+          <button className="btn btn-primary">Post review</button>
+        </form>
+      )}
+    </Modal>
+  );
+}
 
 export default function Users() {
-  const [users, setUsers] = useState([]);
+  const me = getUser();
+  const nav = useNavigate();
+  const [users, setUsers] = useState(null);
   const [reviews, setReviews] = useState([]);
-  const [selectedMentor, setSelectedMentor] = useState(null);
+  const [q, setQ] = useState("");
+  const [skill, setSkill] = useState("");
+  const [open, setOpen] = useState(null);
 
-  const [review, setReview] = useState({
-    learner: "",
-    mentor: "",
-    rating: "",
-    comment: ""
-  });
+  const loadReviews = () => api.reviews().then(setReviews).catch(() => {});
+  useEffect(() => { api.users().then(setUsers).catch(() => setUsers([])); loadReviews(); }, []);
 
-  // 🔍 Search + Filter
-  const [search, setSearch] = useState("");
-  const [skillFilter, setSkillFilter] = useState("");
-
-  // 🤖 AI States (YOU WERE MISSING THIS)
-  const [aiSkill, setAiSkill] = useState("");
-  const [aiResults, setAiResults] = useState([]);
-
-  useEffect(() => {
-    axios.get("http://localhost:5000/api/users")
-      .then(res => setUsers(res.data))
-      .catch(err => console.log(err));
-
-    fetchReviews();
-  }, []);
-
-  const fetchReviews = async () => {
-    try {
-      const res = await axios.get("http://localhost:5000/api/review/all");
-      setReviews(res.data);
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  const openReviewSection = (mentorName) => {
-    setSelectedMentor(mentorName);
-    setReview({
-      learner: "",
-      mentor: mentorName,
-      rating: "",
-      comment: ""
-    });
-  };
-
-  const handleChange = (e) => {
-    setReview({
-      ...review,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const submitReview = async () => {
-    try {
-      await axios.post("http://localhost:5000/api/review/add", review);
-
-      alert("Review Submitted ⭐");
-
-      setReview({
-        learner: "",
-        mentor: selectedMentor,
-        rating: "",
-        comment: ""
-      });
-
-      fetchReviews();
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  // 🤖 AI FUNCTION
-  const getAIRecommendations = async () => {
-    try {
-      const res = await axios.get(
-        `http://localhost:5000/api/recommend/${aiSkill}`
-      );
-      setAiResults(res.data);
-    } catch (err) {
-      console.log(err);
-    }
-  };
+  const allSkills = useMemo(() => [...new Set((users || []).flatMap((u) => u.skillsOffered))].sort(), [users]);
+  const ratings = useMemo(() => ratingMap(reviews), [reviews]);
+  const shown = (users || []).filter((u) =>
+    u.name.toLowerCase().includes(q.toLowerCase()) &&
+    (!skill || u.skillsOffered.some((s) => s.toLowerCase() === skill.toLowerCase())));
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>All Users</h2>
-
-      {/* 🤖 AI RECOMMENDATION */}
-      <h3>AI Recommend Mentors 🤖</h3>
-
-      <input
-        placeholder="Enter skill (e.g. python)"
-        value={aiSkill}
-        onChange={(e) => setAiSkill(e.target.value)}
-      />
-
-      <button onClick={getAIRecommendations}>
-        Find Mentors
-      </button>
-
-      <br /><br />
-
-      {aiResults.length > 0 && (
-        <div>
-          <h4>Recommended Mentors:</h4>
-
-          {aiResults.map((u, i) => (
-            <div key={i} style={{
-              border: "1px solid purple",
-              padding: "10px",
-              margin: "10px 0",
-              borderRadius: "8px"
-            }}>
-              <h4>{u.name}</h4>
-              <p>{u.email}</p>
-              <p>{u.skillsOffered.join(", ")}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* 🔍 Search + Filter */}
-      <div style={{ display: "flex", gap: "10px", marginBottom: "20px", marginTop: "20px" }}>
-        <input
-          placeholder="🔍 Search by name"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-
-        <input
-          placeholder="🎯 Filter by skill"
-          value={skillFilter}
-          onChange={(e) => setSkillFilter(e.target.value)}
-        />
+    <div className="container">
+      <PageHead title="Explore" sub="Find people to learn from — and swap with." />
+      <div className="toolbar">
+        <div className="search"><Icon name="search" size={16} /><input className="input" placeholder="Search people by name" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search by name" /></div>
+      </div>
+      <div className="chips" style={{ marginBottom: 22 }}>
+        <button className={"chip" + (!skill ? " on" : "")} onClick={() => setSkill("")}>All skills</button>
+        {allSkills.map((s) => <button key={s} className={"chip" + (skill === s ? " on" : "")} onClick={() => setSkill(skill === s ? "" : s)}>{s}</button>)}
       </div>
 
-      {/* 👇 Users List */}
-      {users
-        .filter((u) =>
-          u.name.toLowerCase().includes(search.toLowerCase())
-        )
-        .filter((u) =>
-          u.skillsOffered
-            .join(" ")
-            .toLowerCase()
-            .includes(skillFilter.toLowerCase())
-        )
-        .map((u, index) => (
-          <div key={index} className="card">
-            <h3>{u.name}</h3>
-            <p><b>Email:</b> {u.email}</p>
-            <p><b>Skills Offered:</b> {u.skillsOffered.join(", ")}</p>
-            <p><b>Skills Wanted:</b> {u.skillsWanted.join(", ")}</p>
-
-            <button onClick={() => openReviewSection(u.name)}>
-              View/Add Reviews
-            </button>
-
-            {/* ⭐ Reviews */}
-            {selectedMentor === u.name && (
-              <div style={{ marginTop: "15px" }}>
-                <h4>Reviews for {u.name}</h4>
-
-                {reviews
-                  .filter(r => r.mentor === u.name)
-                  .map((r, i) => (
-                    <div key={i} style={{
-                      border: "1px solid gray",
-                      padding: "10px",
-                      margin: "10px 0",
-                      borderRadius: "8px"
-                    }}>
-                      <p><b>{r.learner}</b></p>
-                      <p>{r.rating} ⭐</p>
-                      <p>{r.comment}</p>
-                    </div>
-                  ))}
-
-                <input
-                  name="learner"
-                  placeholder="Your Name"
-                  value={review.learner}
-                  onChange={handleChange}
-                />
-                <br /><br />
-
-                <input
-                  name="rating"
-                  type="number"
-                  min="1"
-                  max="5"
-                  placeholder="Rating (1-5)"
-                  value={review.rating}
-                  onChange={handleChange}
-                />
-                <br /><br />
-
-                <textarea
-                  name="comment"
-                  placeholder="Write review..."
-                  value={review.comment}
-                  onChange={handleChange}
-                />
-                <br /><br />
-
-                <button onClick={submitReview}>
-                  Submit Review
-                </button>
+      {!users ? <Skeleton h={230} n={6} /> : shown.length === 0 ? (
+        <Empty title="No one matches that" text="Try a different name or clear the skill filter."><button className="btn btn-outline btn-sm" onClick={() => { setQ(""); setSkill(""); }}>Clear filters</button></Empty>
+      ) : (
+        <div className="grid">
+          {shown.map((u) => {
+            const r = ratings[u.name];
+            const isMe = u.name === me.name;
+            return (
+              <div className="card card-hover user-card" key={u._id}>
+                <div className="user-top">
+                  <Avatar name={u.name} size={48} />
+                  <div>
+                    <h3>{u.name}{isMe && <span className="tag tag-muted" style={{ marginLeft: 8 }}>You</span>}</h3>
+                    <small>{r ? <><Stars value={r.sum / r.n} size={13} /> {(r.sum / r.n).toFixed(1)} ({r.n})</> : "No reviews yet"}</small>
+                  </div>
+                </div>
+                <div><div className="label">Teaches</div><Tags items={u.skillsOffered} tone="accent" /></div>
+                <div><div className="label">Wants to learn</div><Tags items={u.skillsWanted} tone="muted" /></div>
+                <div className="user-actions">
+                  <button className="btn btn-outline btn-sm" onClick={() => setOpen(u)}>Reviews</button>
+                  {!isMe && <button className="btn btn-primary btn-sm" onClick={() => nav("/booking", { state: { mentor: u.name, skill: u.skillsOffered[0] } })}>Request session</button>}
+                </div>
               </div>
-            )}
-          </div>
-        ))}
+            );
+          })}
+        </div>
+      )}
+      {open && <ReviewModal mentor={open} reviews={reviews} me={me} onClose={() => setOpen(null)} onAdded={loadReviews} />}
     </div>
   );
 }

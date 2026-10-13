@@ -1,192 +1,99 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import Icon from "../components/Icon";
+
+const PAIRS = [
+  ["Python", "Spanish"],
+  ["Guitar", "Photography"],
+  ["UI Design", "Public Speaking"],
+  ["Cooking", "Web Development"],
+];
+
+const FEATURES = [
+  ["users", "Smart matching", "Find people who teach what you want to learn — and want what you can teach."],
+  ["chat", "Built-in chat", "Message your match and agree on a time without leaving the app."],
+  ["calendar", "Session booking", "Request, accept or decline sessions and track every status."],
+  ["star", "Reviews & ratings", "Build a reputation with feedback from real learners."],
+  ["trophy", "Leaderboard", "Top contributors rise by skills shared and ratings earned."],
+  ["shield", "Zero cost", "No payments. Time and knowledge are the only currency."],
+];
 
 export default function Home() {
-  const [notifications, setNotifications] = useState([]);
-  const [showNotifications, setShowNotifications] = useState(false);
-
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
-
-  const fetchNotifications = async () => {
-    try {
-      const res = await axios.get(
-        "http://localhost:5000/api/notifications/all"
-      );
-      setNotifications(res.data);
-    } catch (err) {
-      console.log(err);
-    }
-  };
+  const [i, setI] = useState(0);
+  const [give, get] = PAIRS[i];
 
   return (
-    <div style={{ padding: "20px", position: "relative", zIndex: 1 }}>
+    <div className="container">
+      <section className="hero">
+        <div className="hero-grid">
+          <div>
+            <span className="eyebrow"><Icon name="zap" size={14} /> Peer-to-peer skill exchange</span>
+            <h1>Teach what you know.<br /><span className="grad">Learn what you don't.</span></h1>
+            <p className="lead">Exora matches people who want to swap skills — no money, no courses, just real conversations and sessions with someone who's been there.</p>
+            <div className="hero-cta">
+              <Link to="/register" className="btn btn-primary btn-lg">Get started <Icon name="arrow" size={16} /></Link>
+              <Link to="/login" className="btn btn-outline btn-lg">Log in</Link>
+            </div>
+            <div className="stats">
+              <div className="stat"><strong>6</strong><span>core features</span></div>
+              <div className="stat"><strong>Full-stack</strong><span>React · Node · MongoDB</span></div>
+              <div className="stat"><strong>Real-time</strong><span>Socket.IO chat</span></div>
+            </div>
+          </div>
 
-      {/* 👤 Avatar + 🔔 Bell */}
-      <div
-        style={{
-          position: "absolute",
-          top: "20px",
-          right: "30px",
-          display: "flex",
-          gap: "15px",
-          alignItems: "center"
-        }}
-      >
-
-        {/* 👤 Avatar */}
-        <div
-          onClick={() => navigate("/profile")}
-          style={{
-            width: "35px",
-            height: "35px",
-            borderRadius: "50%",
-            background: "#555",
-            color: "white",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            fontWeight: "bold"
-          }}
-        >
-          👤
-        </div>
-
-        {/* 🔔 Bell */}
-        <div
-          style={{
-            cursor: "pointer",
-            fontSize: "26px"
-          }}
-          onClick={() => setShowNotifications(!showNotifications)}
-        >
-          🔔
-        </div>
-      </div>
-
-      {/* 🔔 Notification Dropdown */}
-      {showNotifications && (
-        <div
-          style={{
-            position: "absolute",
-            top: "60px",
-            right: "20px",
-            width: "300px",
-            background: "white",
-            border: "1px solid gray",
-            borderRadius: "10px",
-            padding: "10px",
-            boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
-            zIndex: 100
-          }}
-        >
-          <h4>Notifications</h4>
-
-          {notifications.length === 0 ? (
-            <p>No notifications yet</p>
-          ) : (
-            notifications.map((n, index) => (
-              <div
-                key={index}
-                style={{
-                  borderBottom: "1px solid #ddd",
-                  padding: "8px 0"
-                }}
-              >
-                {n.message}
+          <div className="swap-demo" aria-label="How a swap works">
+            <h4>How a swap works</h4>
+            <div className="chips">
+              {PAIRS.map(([a], n) => (
+                <button key={a} className={"chip" + (n === i ? " on" : "")} onClick={() => setI(n)}>I teach {a}</button>
+              ))}
+            </div>
+            <div className="swap-result" key={i}>
+              <div className="label">A perfect match</div>
+              <div className="swap-people">
+                <span className="avatar" style={{ width: 46, height: 46, background: "var(--accent)" }}><Icon name="user" size={22} /></span>
+                <div><b>You</b><small>teach {give}</small></div>
+                <span className="arrow"><Icon name="swap" size={16} /></span>
+                <div><b>Your match</b><small>teaches {get}</small></div>
               </div>
-            ))
-          )}
-        </div>
-      )}
-
-      {/* 🚀 HERO SECTION */}
-      <div style={{ textAlign: "center", marginTop: "80px" }}>
-        <h1 className="glow">Exora 🚀</h1>
-
-        <p style={{ fontSize: "1.2rem", maxWidth: "600px", margin: "auto" }}>
-          Learn, teach, and grow together.<br></br>
-          Exchange skills with people around the world. <br></br> Build real connections.<br></br>
-        </p>
-
-        <div className="nav" style={{ marginTop: "20px" }}>
-          <Link to="/register">
-            <button className="magic-btn"> <u>Get Started</u></button> 
-            </Link>  
-        </div>
-
-        <p style={{ marginTop: "15px" }}>
-          Already have an account?{" "}
-          <Link to="/login" style={{ color: "#f7f0fc" }}>
-            Login now
-          </Link>
-        </p>
-      </div>
-
-      {/* 💡 ABOUT */}
-      <div style={{ textAlign: "center", marginTop: "60px" }}>
-        <h2 className="glow">What is Exora?</h2>
-
-        <p style={{ maxWidth: "700px", margin: "auto" }}>
-          Want to learn new skills!! but you ain't tryna pay no money...🤔<br></br>
-          Like Pay!? In this <i>economy!!!</i> <br></br>
-          Well we understand and don't worry. We got you 😉 <br></br>
-          Introducing Exora...<br></br>
-          Exora is a skill exchange platform where you can learn whatever you want 
-          and in exchange teach what you got — all through meaningful collaborations. <br></br>
-          No money involved, just knowledge sharing.<br></br>
-          Sounds too good to be true right? But it is what it is.😌
-        </p>
-      </div>
-
-      {/* ⚡ FEATURES */}
-      <div style={{ textAlign: "center", marginTop: "60px" }}>
-        <h2 className="glow">Features</h2>
-
-        <div className="nav">
-          <div className="card">
-            <h3>🤝 Skill Matching</h3>
-            <p>Find people who match your learning and teaching goals.</p>
-          </div>
-
-          <div className="card">
-            <h3>💬 Real-Time Chat</h3>
-            <p>Connect instantly and start learning together.</p>
-          </div>
-
-          <div className="card">
-            <h3>📅 Book Sessions</h3>
-            <p>Schedule sessions and manage your learning easily.</p>
-          </div>
-
-          <div className="card">
-            <h3>⭐ Reviews & Ratings</h3>
-            <p>Build trust with feedback from real learners.</p>
+              <p className="muted" style={{ marginTop: 12, fontSize: 14 }}>
+                You help them with <b style={{ color: "var(--text)" }}>{give}</b>, they help you with <b style={{ color: "var(--text)" }}>{get}</b>. Both of you learn for free.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* 🚀 CTA */}
-      <div style={{ textAlign: "center", marginTop: "60px" }}>
-        <h2 className="glow">Start Your Journey ✨</h2>
-        <p>Join Exora today and unlock limitless learning.</p>
+      <section className="section">
+        <div className="section-head">
+          <h2>Everything you need to swap skills</h2>
+          <p>A complete loop from discovery to feedback.</p>
+        </div>
+        <div className="features">
+          {FEATURES.map(([ic, t, d]) => (
+            <div className="card feature card-hover" key={t}>
+              <div className="ico"><Icon name={ic} size={20} /></div>
+              <h3>{t}</h3>
+              <p>{d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
-        <Link to="/auth">
-          <button className="magic-btn">Join Now</button>
-        </Link>
-      </div>
+      <section className="section">
+        <div className="section-head"><h2>How it works</h2></div>
+        <div className="steps">
+          <div className="card step"><h3>List your skills</h3><p>Add what you can teach and what you'd like to learn.</p></div>
+          <div className="card step"><h3>Get matched</h3><p>Browse people, or search a skill to see who teaches it.</p></div>
+          <div className="card step"><h3>Book & learn</h3><p>Chat, schedule a session, then leave a review.</p></div>
+        </div>
+      </section>
 
-      <div style={{ textAlign: "center", marginTop: "60px" }}>
-        
-        
-        
-      </div>
-
+      <section className="cta-band">
+        <h2>Ready to trade skills?</h2>
+        <p>Create your free account in under a minute.</p>
+        <Link to="/register" className="btn btn-primary btn-lg">Create account <Icon name="arrow" size={16} /></Link>
+      </section>
     </div>
   );
 }

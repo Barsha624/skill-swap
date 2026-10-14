@@ -9,7 +9,7 @@ import { useToast } from "../components/Toast";
 export default function Profile() {
   const me = getUser();
   const toast = useToast();
-  const [name, setName] = useState(me.name);
+  const name = me.name; // permanent
   const [email, setEmail] = useState(me.email);
   const [offered, setOffered] = useState(me.skillsOffered || []);
   const [wanted, setWanted] = useState(me.skillsWanted || []);

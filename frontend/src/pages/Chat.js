@@ -24,12 +24,13 @@ export default function Chat() {
   const timers = useRef([]);
 
   useEffect(() => {
+    const pending = timers.current;
     api.users().then((u) => {
       const others = u.filter((x) => x.name !== me.name);
       setPeople(others);
       setActive((a) => a || others[0]?.name);
     }).catch(() => {});
-    return () => timers.current.forEach(clearTimeout);
+    return () => pending.forEach(clearTimeout);
     // eslint-disable-next-line
   }, []);
 
